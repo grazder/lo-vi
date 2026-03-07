@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>lo-vi</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <span class="logo">lo&#8209;vi</span>
+    <select id="song-select"><option value="">loading…</option></select>
+    <div class="transport">
+      <button id="btn-stop" title="Stop">&#9632;</button>
+      <button id="btn-play" title="Play / Pause">&#9654;</button>
+    </div>
+    <span id="time-display">0:00 / 0:00</span>
+    <span id="bpm-display"></span>
+    <div class="spacer"></div>
+    <button id="btn-download" title="Render and download WAV">&#8595; wav</button>
+  </header>
+
+  <!-- Overview: note-activity "waveform" of the full song -->
+  <div id="overview-wrap">
+    <canvas id="overview"></canvas>
+  </div>
+
+  <!-- Main DAW area -->
+  <div id="daw">
+    <div id="ruler-row">
+      <div class="row-label"></div>
+      <canvas id="ruler"></canvas>
+    </div>
+    <div id="tracks"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
