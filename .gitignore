@@ -15,3 +15,6 @@ output/*.mid
 output/*.wav
 output/*.mp3
 output/*.xml
+
+# macOS
+.DS_Store
