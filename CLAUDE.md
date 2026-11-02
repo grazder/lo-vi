@@ -1,71 +1,89 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Этот файл содержит инструкции для Claude Code (claude.ai/code) при работе с кодом в этом репозитории.
 
-## Project
+## Проект
 
 **lo-vi** — вайбкодинг музыки. Каждая песня — это Python-файл в `songs/`, описывающий структуру, аккорды и мелодию напрямую через music21. Принцип DIY/lo-fi: код и есть партитура.
 
-## Commands
+Продуктовый вижен (AI-DAW в браузере с чатом в центре) описан в `PRODUCT.md`.
+
+Документация проекта (`CLAUDE.md`, `PRODUCT.md`, `README.md`, `ROADMAP.md`) ведётся на русском.
+
+## Процесс разработки
+
+```
+PRODUCT.md      — вижен: что строим и зачем
+ROADMAP.md      — Сейчас / Дальше / Потом: что делаем по порядку
+openspec/       — спеки: каждое изменение кода = OpenSpec change
+docs/adr/       — записи об архитектурных решениях
+```
+
+- **Единственный спек-фреймворк — OpenSpec.** Новая фича или заметное изменение кода: `/opsx:propose` → `/opsx:apply` → `/opsx:archive`. Для обдумывания — `/opsx:explore`. Не создавать параллельные PRD, планы и спеки другими скилами (gstack `/spec`, `ecc:plan`, `ecc:prp-*`, `pm-*`, `founder:*`) — их выводы, если нужны, переносятся в артефакты OpenSpec. Живая спека системы — `openspec/specs/`.
+- **Роадмап.** Работа берётся из раздела «Сейчас» в `ROADMAP.md`. После архивации изменения — перенести пункт в «Готово» с датой.
+- **ADR.** Крупные архитектурные развилки (например, формат песни) фиксируются в `docs/adr/NNNN-<slug>.md`: контекст, варианты, решение, последствия.
+- **UI.** Дизайн-работа над `web/` — через impeccable (`/impeccable shape`, `critique`, `polish`); продуктовый контекст для него — `PRODUCT.md`.
+
+## Команды
 
 ```bash
-# Run a song (generate MIDI into output/)
+# Запустить песню (сгенерировать MIDI в output/)
 uv run songs/first_light.py
 
-# Start the web DAW demo → http://127.0.0.1:8080
+# Запустить веб-демо DAW → http://127.0.0.1:8080
 uv run web/server.py
 
-# Install dependencies
+# Установить зависимости
 uv sync
 
-# Add a new dependency
+# Добавить зависимость
 uv add <package>
 ```
 
-MIDI output lands in `output/` (git-ignored).
+MIDI попадает в `output/` (игнорируется git).
 
-## Architecture
+## Архитектура
 
-Each song is a self-contained script in `songs/`. No shared library — songs import directly from `music21`.
+Каждая песня — самодостаточный скрипт в `songs/`. Общей библиотеки нет — песни импортируют `music21` напрямую.
 
-**Typical song structure:**
-1. Create a `stream.Score` with `metadata.Metadata`
-2. Build `stream.Part` objects (one per instrument/voice)
-3. Append `chord.Chord`, `note.Note`, `note.Rest`, and `tempo.MetronomeMark` objects
-4. Call `score.write("midi", fp="output/<name>.mid")`
+**Типичная структура песни:**
+1. Создать `stream.Score` с `metadata.Metadata`
+2. Собрать объекты `stream.Part` (по одному на инструмент/голос)
+3. Добавить объекты `chord.Chord`, `note.Note`, `note.Rest` и `tempo.MetronomeMark`
+4. Вызвать `score.write("midi", fp="output/<name>.mid")`
 
-**Key music21 objects used:**
-- `stream.Score` / `stream.Part` — containers for musical content
-- `chord.Chord(pitches, quarterLength=...)` — pitches as e.g. `["A3","C4","E4"]`
-- `note.Note("A4", quarterLength=1.0)` — quarter note = 1.0
-- `note.Rest(quarterLength=4.0)` — silence
-- `tempo.MetronomeMark(number=72)` — BPM, added to a Part
+**Основные объекты music21:**
+- `stream.Score` / `stream.Part` — контейнеры для музыкального содержимого
+- `chord.Chord(pitches, quarterLength=...)` — высоты, например `["A3","C4","E4"]`
+- `note.Note("A4", quarterLength=1.0)` — четвертная = 1.0
+- `note.Rest(quarterLength=4.0)` — пауза
+- `tempo.MetronomeMark(number=72)` — BPM, добавляется в Part
 
-**Duration convention:** `quarterLength` — 4.0 = whole note, 2.0 = half, 1.0 = quarter, 0.5 = eighth.
+**Длительности:** `quarterLength` — 4.0 = целая, 2.0 = половинная, 1.0 = четвертная, 0.5 = восьмая.
 
-## Web demo (web/)
+## Веб-демо (web/)
 
-`web/server.py` is a FastAPI server that:
-- `GET /api/songs` → lists `output/*.mid` files
-- `GET /api/songs/{name}/midi` → parses MIDI with `mido` and returns JSON `{bpm, duration, tracks}`
-- Serves `web/` as static root, `output/` at `/output/`
+`web/server.py` — FastAPI-сервер, который:
+- `GET /api/songs` → отдаёт список файлов `output/*.mid`
+- `GET /api/songs/{name}/midi` → разбирает MIDI через `mido` и возвращает JSON `{bpm, duration, tracks}`
+- Раздаёт `web/` как статический корень, а `output/` — по пути `/output/`
 
-`web/app.js` (vanilla JS + Tone.js 14.x via CDN):
-- Fetches MIDI JSON, schedules notes with `Tone.PolySynth` via `Tone.Transport.schedule`
-- Renders overview (note-activity heatmap over full song), time ruler, and per-track piano rolls on `<canvas>`
-- Zoom: scroll wheel on any track canvas or ruler scales `zoom` (px/sec) around cursor time
-- Seek: click overview → reschedule synths + set `Tone.Transport.seconds`
-- Auto-scroll: keeps playhead visible past 70% of view width
+`web/app.js` (vanilla JS + Tone.js 14.x через CDN):
+- Загружает MIDI JSON и планирует ноты на `Tone.PolySynth` через `Tone.Transport.schedule`
+- Рисует на `<canvas>` обзор (тепловую карту активности нот по всей песне), линейку времени и пиано-роллы по трекам
+- Зум: колесо мыши на любом канвасе трека или линейке меняет `zoom` (px/сек) вокруг времени под курсором
+- Перемотка: клик по обзору → перепланировать синты + выставить `Tone.Transport.seconds`
+- Автопрокрутка: держит плейхед в зоне видимости после 70% ширины
 
-**Important Tone.js 14.x gotchas:**
-- Objects (notes, chords, MetronomeMark) can only belong to one `stream` — always create fresh instances when appending multiple times
-- `Tone.Transport.schedule()` uses absolute seconds; seeking backward requires `cancel()` + reschedule
-- Must call `await Tone.start()` on a user gesture before starting the Transport
+**Важные подводные камни:**
+- music21: объекты (ноты, аккорды, MetronomeMark) могут принадлежать только одному `stream` — при многократном добавлении всегда создавай новые экземпляры
+- Tone.js 14.x: `Tone.Transport.schedule()` работает в абсолютных секундах; перемотка назад требует `cancel()` + повторного планирования
+- Tone.js 14.x: перед запуском Transport нужно вызвать `await Tone.start()` по действию пользователя
 
-## Output formats
+## Форматы вывода
 
-music21 can write to multiple formats via `score.write(fmt, fp=...)`:
-- `"midi"` — MIDI file
-- `"musicxml"` — MusicXML (importable in MuseScore, Sibelius)
-- `"lilypond"` — sheet music (requires LilyPond installed)
-- `"braille.music"` — Braille notation
+music21 умеет писать в разные форматы через `score.write(fmt, fp=...)`:
+- `"midi"` — MIDI-файл
+- `"musicxml"` — MusicXML (импортируется в MuseScore, Sibelius)
+- `"lilypond"` — ноты (нужен установленный LilyPond)
+- `"braille.music"` — нотация Брайля

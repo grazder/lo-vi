@@ -1,12 +1,14 @@
 # lo-vi
 
-Vibecoding music. Each song is a Python file — the code *is* the score.
+Вайбкодинг музыки. Каждая песня — это Python-файл, и код *и есть* партитура.
 
-DIY/lo-fi principle: no DAW, no GUI, just write the structure, chords, and melody directly in code and run it.
+Принцип DIY/lo-fi: никакого DAW, никакого GUI — просто пиши структуру, аккорды и мелодию прямо в коде и запускай.
+
+Куда движется проект — AI-DAW в браузере, где музыку делаешь в разговоре с AI, — описано в [PRODUCT.md](PRODUCT.md).
 
 ---
 
-## Idea
+## Идея
 
 ```python
 # songs/first_light.py
@@ -19,18 +21,18 @@ add_progression(chords_part, times=2)
 add_melody(melody_part, verse_melody_notes)
 ```
 
-Each `songs/*.py` generates a MIDI file in `output/`. The web demo lets you listen to it in a minimal DAW-like interface — waveform overview, per-track piano roll, zoom, seek, WAV export.
+Каждый `songs/*.py` генерирует MIDI-файл в `output/`. Веб-демо позволяет послушать его в минималистичном DAW-подобном интерфейсе: обзор формы, пиано-ролл по трекам, зум, перемотка, экспорт в WAV.
 
-## Songs
+## Песни
 
-| File | BPM | Key | Tools |
-|------|-----|-----|-------|
+| Файл | BPM | Тональность | Инструменты |
+|------|-----|-------------|-------------|
 | `songs/first_light.py` | 72 | Am | music21 |
 | `songs/dnb_break.py` | 170 | Am | mido |
 
-## Setup
+## Установка
 
-Requires [uv](https://docs.astral.sh/uv/).
+Нужен [uv](https://docs.astral.sh/uv/).
 
 ```bash
 git clone https://github.com/grazder/lo-vi
@@ -38,23 +40,23 @@ cd lo-vi
 uv sync
 ```
 
-## Usage
+## Использование
 
 ```bash
-# Write a song → MIDI
+# Написать песню → MIDI
 uv run songs/first_light.py
 # output/first_light.mid
 
-# Open the web demo
+# Открыть веб-демо
 uv run web/server.py
 # → http://127.0.0.1:8080
 ```
 
-The web demo plays back any MIDI in `output/` using synthesized audio (Tone.js), shows a note-activity waveform and per-track piano rolls, and can export WAV.
+Веб-демо проигрывает любой MIDI из `output/` синтезированным звуком (Tone.js), показывает «форму волны» по активности нот и пиано-роллы по трекам, умеет экспортировать WAV.
 
-## Writing a song
+## Как написать песню
 
-**Pitched instruments** — use [music21](https://web.mit.edu/music21/):
+**Мелодические инструменты** — через [music21](https://web.mit.edu/music21/):
 
 ```python
 from music21 import stream, note, chord, tempo
@@ -68,24 +70,24 @@ score.append(part)
 score.write("midi", fp="output/my_song.mid")
 ```
 
-`quarterLength`: `4.0` = whole, `2.0` = half, `1.0` = quarter, `0.5` = eighth.
+`quarterLength`: `4.0` — целая, `2.0` — половинная, `1.0` — четвертная, `0.5` — восьмая.
 
-**Beats and drums** — use [mido](https://mido.readthedocs.io/) for direct MIDI control (channel 9 = GM percussion):
+**Биты и барабаны** — через [mido](https://mido.readthedocs.io/) для прямого управления MIDI (канал 9 = перкуссия GM):
 
 ```python
 import mido
 from mido import MidiFile, MidiTrack, Message
 
-KICK, SNARE, CLHAT = 36, 38, 42   # GM drum map
+KICK, SNARE, CLHAT = 36, 38, 42   # карта ударных GM
 
 mid = MidiFile(ticks_per_beat=480)
-# build tracks, write note_on/note_off messages on channel=9
+# собрать треки, записать сообщения note_on/note_off на channel=9
 mid.save("output/my_beat.mid")
 ```
 
-## Stack
+## Стек
 
-- [music21](https://web.mit.edu/music21/) — music theory, notation, MIDI generation
-- [mido](https://mido.readthedocs.io/) — low-level MIDI, drum tracks
-- [Tone.js](https://tonejs.github.io/) — browser synthesis and offline WAV render
-- [FastAPI](https://fastapi.tiangolo.com/) — dev server, MIDI→JSON API
+- [music21](https://web.mit.edu/music21/) — теория музыки, нотация, генерация MIDI
+- [mido](https://mido.readthedocs.io/) — низкоуровневый MIDI, барабанные треки
+- [Tone.js](https://tonejs.github.io/) — синтез в браузере и офлайн-рендер WAV
+- [FastAPI](https://fastapi.tiangolo.com/) — dev-сервер, API MIDI→JSON
